@@ -2,13 +2,16 @@
 #include <string>
 #include <fstream>
 #include <sys/stat.h>
-#include <tchar.h>
 #include <Windows.h>
+#include <conio.h>
 #include <io.h>
+#include <chrono>
+#include <ctime>
 #define SIZE 1000
 using namespace std;
-
+ 
 const string ADMIN_USERNAME = "admin";
+string LoggedInUser;
 
 void clear_screen()
 {
@@ -43,6 +46,29 @@ bool ChCrDir() {
     }
 
 }
+
+
+string getLimitTime() {
+    // Get the current time
+    auto now = std::chrono::system_clock::now();
+
+    // Add 30 minutes to the time
+    auto time_plus_30_minutes = now + std::chrono::duration_cast<std::chrono::system_clock::duration>(std::chrono::minutes(30));
+
+    // Convert the time to a timestamp
+    std::time_t timestamp = std::chrono::system_clock::to_time_t(time_plus_30_minutes);
+
+    // Convert the timestamp to a string
+    std::string time_str = std::ctime(&timestamp);
+
+    // Print the time string
+    std::cout << "Unlock Time: " << time_str << std::endl;
+
+    return time_str;
+}
+
+
+
 
 char* enc_b64(string input_str, int len_str)
 {
@@ -169,8 +195,20 @@ char* dc_b64(string encoded, int len_str)
 int adminFunctions(){
     clear_screen();
     int adminC;
-    cout<<"!! Admin Panel !!"<<endl;
-    cout<<"Menu:\n1. View All Users.\n2. Delete an User.\n3. Add an User.\n4. Exit \n:";
+    cout<<"-----------------------------------------------------------------------------------------------------------------\n";
+    cout<<"-----------------------------------------------------------------------------------------------------------------\n\n";
+    cout<<"                                               ADMIN PANEL\n\n";
+    cout<<"                                              Made by NEXUS\n";
+    cout<<"-----------------------------------------------------------------------------------------------------------------\n";
+    cout<<"-----------------------------------------------------------------------------------------------------------------\n\n";
+    cout<<"1] View All Users\n";
+    cout<<"2] Delete an User\n";
+    cout<<"3] Add an User\n";
+    cout<<"4] Exit\n\n";
+    cout<<"-----------------------------------------------------------------------------------------------------------------\n";
+    cout<<"Choice: ";
+    // cout<<"!! Admin Panel !!"<<endl;
+    // cout<<"Menu:\n1. View All Users.\n2. Delete an User.\n3. Add an User.\n4. Exit \n:";
     cin>>adminC;
     if(adminC==1){
         string dir_path = "database\\";
@@ -189,7 +227,9 @@ int adminFunctions(){
             if (i++ < 2) continue;
             cout << data.cFileName << endl;
         }
-        FindClose(handle);  
+        FindClose(handle);
+        getch();
+        adminFunctions();
     }
     else if (adminC==2)
     {
@@ -198,20 +238,32 @@ int adminFunctions(){
         cout<<"Enter the username to delete: ";
         cin>>temp_un;
         string dir_path = "database\\";
-
         // Check if the file exists in the directory
-        DWORD file_attributes = GetFileAttributes((dir_path + temp_un).c_str());
-        if (file_attributes == INVALID_FILE_ATTRIBUTES) {
-            cout << "The User '" << temp_un << "' does not exist!" << endl;
-        } else{
-                if (DeleteFile((dir_path + temp_un).c_str())) {
-                    cout << "The user '" << temp_un << "' was successfully deleted" << endl;
-                    adminFunctions();
-                } else {
-                    cerr << "Error: The user '" << temp_un << "' could not be deleted" << endl;
-                    adminFunctions();
-                }
+        if(temp_un!=LoggedInUser){
+            DWORD file_attributes = GetFileAttributes((dir_path + temp_un).c_str());
+            if (file_attributes == INVALID_FILE_ATTRIBUTES) {
+                cout << "The User '" << temp_un << "' does not exist!" << endl;
+                Sleep(3000);
+                adminFunctions();
+            } else{
+                    if (DeleteFile((dir_path + temp_un).c_str())) {
+                        cout << "The user '" << temp_un << "' was successfully deleted" << endl;
+                        Sleep(3000);
+                        adminFunctions();
+                    } else {
+                        cerr << "Error: The user '" << temp_un << "' could not be deleted" << endl;
+                        Sleep(3000);
+                        adminFunctions();
+                    }
+            }
         } 
+        else
+        {
+            cout<<"\nYou Cannot Delete Yourself at this time!";
+            Sleep(4000);
+            adminFunctions();
+        }
+        
     }
     else if(adminC==3){
         string username, password;
@@ -223,6 +275,7 @@ int adminFunctions(){
         if (acc)
         {
             cout<<"Member Already Exist!";
+            Sleep(3000);
             adminFunctions();
         }
         else
@@ -235,6 +288,8 @@ int adminFunctions(){
             if (!creds)
             {
                 cout<<"Error Creating Account! Please try again!"<<endl;
+                Sleep(3000);
+                adminFunctions();
             }
             else
             {
@@ -249,15 +304,52 @@ int adminFunctions(){
                 adminFunctions();
             }
         }
+    }else if (adminC==4)
+    {
+        clear_screen();
+        cout<<"Thanks for Using.\nExiting...";
+        exit(0);
+    }else
+    {
+        cout<<"\n\nInvalid Choice!";
+        adminFunctions();
     }
+    
+    
 }
 
 
+bool checkRateLimit(){
+    ifstream rl;
+    string rlTime;
+    if (!rl)
+    {
+        return false;
+    } else
+    {
+        return true;
+    }
+    
+    
+}
+
 int main(){
     if(ChCrDir()){
-        string LoggedInUser;
+        // string LoggedInUser;
+        clear_screen();
         int choice;
-        cout<<"menu:\n1.Register\n2.Login\n3.Exit"<<endl;
+        // cout<<"menu:\n1.Register\n2.Login\n3.Exit"<<endl;
+        cout<<"-----------------------------------------------------------------------------------------------------------------\n";
+        cout<<"-----------------------------------------------------------------------------------------------------------------\n\n";
+        cout<<"                        advanced User Management System via File Handling and Classes\n\n";
+        cout<<"                                              Made by NEXUS\n";
+        cout<<"-----------------------------------------------------------------------------------------------------------------\n";
+        cout<<"-----------------------------------------------------------------------------------------------------------------\n\n";
+        cout<<"1] Register\n";
+        cout<<"2] Login\n";
+        cout<<"3] Exit\n\n";
+        cout<<"-----------------------------------------------------------------------------------------------------------------\n";
+        cout<<"Choice: ";
         cin>>choice;
 
         string username, password, un, up;
@@ -314,35 +406,65 @@ int main(){
             }
             else
             {
-                cout<<"Enter Password for "<<username<<" : ";
-                cin>>password;
+                int tempCounter=3;
+                do{
+                    cout<<"Enter Password for "<<username<<" : ";
+                    cin>>password;
+        
+                    ifstream user;
+                    user.open("database\\"+ username);
+                    getline(user, un);
+                    getline(user, up);
 
-                ifstream user;
-                user.open("database\\"+ username);
-                getline(user, un);
-                getline(user, up);
+                    // int un_size = un.length()+1;
+                    // int up_size = up.length()+1;
 
-                // int un_size = un.length()+1;
-                // int up_size = up.length()+1;
+                    if (username==dc_b64(un, un.length()) && password==dc_b64(up, up.length()))
+                    {
+                        cout<<"Successfully Logged in..!";
+                        LoggedInUser = username;
+                        if(LoggedInUser == ADMIN_USERNAME) {
+                            // break;
+                            adminFunctions();
+                            break;
+                        }else{
+                            exit(1);
+                        }
 
-                if (username==dc_b64(un, un.length()) && password==dc_b64(up, up.length()))
-                {
-                    cout<<"Successfully Logged in..!";
-                    LoggedInUser = username;
-                    if(LoggedInUser == ADMIN_USERNAME) {
-                        adminFunctions();
                     }
+                    else
+                    {
+                        cout<<"\npassword is wrong for username\n";
+                        // exit(1);
+                        tempCounter--;
+                    }
+                }while(tempCounter!=0);
+                cout<<"\nYou have exceeded Number of Password Tries. Your System is Rate-Limited for 10 minutes\n";
+                ofstream rl;
+                string rlTime = getLimitTime();
+                #ifdef lx
+                rl.open("/tmp/limited");
+                rl<<rlTime;
+                #else
+                rl.open("C:\\limited");
+                rl<<rlTime;
+                #endif
 
-                }
-                else
-                {
-                    cout<<"password is wrong for username";
-                    exit(1);
-                }
-                
+                exit(1);
             }
             
+        } else if (choice==3)
+        {
+            clear_screen();
+            cout<<"Thanks for Using.\nExiting...";
+            exit(0);
+        } else
+        {
+            cout<<"\n\nInvalid Choice!";
+            main();
         }
+        
+        
     }
     else
     {
