@@ -4,10 +4,11 @@
 #include <sys/stat.h>
 #include <tchar.h>
 #include <Windows.h>
+#include <io.h>
 #define SIZE 1000
-
-
 using namespace std;
+
+const string ADMIN_USERNAME = "admin";
 
 void clear_screen()
 {
@@ -165,11 +166,98 @@ char* dc_b64(string encoded, int len_str)
 }
 
 
+int adminFunctions(){
+    clear_screen();
+    int adminC;
+    cout<<"!! Admin Panel !!"<<endl;
+    cout<<"Menu:\n1. View All Users.\n2. Delete an User.\n3. Add an User.\n4. Exit \n:";
+    cin>>adminC;
+    if(adminC==1){
+        string dir_path = "database\\";
+
+        HANDLE handle;
+        WIN32_FIND_DATA data;
+        handle = FindFirstFile((dir_path + "*").c_str(), &data);
+        if (handle == INVALID_HANDLE_VALUE) {
+            cerr << "Error: No files found in the directory" << endl;
+            return -1;
+        }
+        // cout << data.cFileName << endl;
+        int i = 1;
+        while (FindNextFile(handle, &data)) {
+            // Skip the first two files
+            if (i++ < 2) continue;
+            cout << data.cFileName << endl;
+        }
+        FindClose(handle);  
+    }
+    else if (adminC==2)
+    {
+        string temp_un;
+
+        cout<<"Enter the username to delete: ";
+        cin>>temp_un;
+        string dir_path = "database\\";
+
+        // Check if the file exists in the directory
+        DWORD file_attributes = GetFileAttributes((dir_path + temp_un).c_str());
+        if (file_attributes == INVALID_FILE_ATTRIBUTES) {
+            cout << "The User '" << temp_un << "' does not exist!" << endl;
+        } else{
+                if (DeleteFile((dir_path + temp_un).c_str())) {
+                    cout << "The user '" << temp_un << "' was successfully deleted" << endl;
+                    adminFunctions();
+                } else {
+                    cerr << "Error: The user '" << temp_un << "' could not be deleted" << endl;
+                    adminFunctions();
+                }
+        } 
+    }
+    else if(adminC==3){
+        string username, password;
+        cout<<"Enter Username To Register with: ";
+        cin>>username;
+
+        ifstream acc;
+        acc.open("database\\"+username);
+        if (acc)
+        {
+            cout<<"Member Already Exist!";
+            adminFunctions();
+        }
+        else
+        {
+            cout<<"Create a Password: ";
+            cin>>password;
+
+            ofstream creds;
+            creds.open("database\\"+username);
+            if (!creds)
+            {
+                cout<<"Error Creating Account! Please try again!"<<endl;
+            }
+            else
+            {
+                // int un_size = username.length()+1;
+                // char cr_arr[un_size];
+                string enc_un = enc_b64(username, username.length());
+                string enc_up = enc_b64(password, password.length());
+                creds <<  enc_un << endl << enc_up << endl;
+                cout<<"Registered Successfully!" << endl;
+                creds.close();
+                Sleep(3000);
+                adminFunctions();
+            }
+        }
+    }
+}
+
+
 int main(){
     if(ChCrDir()){
-    
+        string LoggedInUser;
         int choice;
-        cout<<"menu:\n1.Register\n2.Login"<<endl;
+        cout<<"menu:\n1.Register\n2.Login\n3.Exit"<<endl;
         cin>>choice;
 
         string username, password, un, up;
@@ -180,7 +268,7 @@ int main(){
             cin>>username;
 
             ifstream acc;
-            acc.open("database\\"+username+".txt");
+            acc.open("database\\"+username);
             if (acc)
             {
                 cout<<"Member Already Exist!";
@@ -192,7 +280,7 @@ int main(){
                 cin>>password;
 
                 ofstream creds;
-                creds.open("database\\"+username+".txt");
+                creds.open("database\\"+username);
                 if (!creds)
                 {
                     cout<<"Error Creating Account! Please try again!"<<endl;
@@ -218,7 +306,7 @@ int main(){
             cin>>username;
 
             ifstream locate;
-            locate.open("database\\"+username+".txt");
+            locate.open("database\\"+username);
             if (!locate)
             {
                 cout<<"You are not an member, register first!";
@@ -230,7 +318,7 @@ int main(){
                 cin>>password;
 
                 ifstream user;
-                user.open("database\\"+ username + ".txt");
+                user.open("database\\"+ username);
                 getline(user, un);
                 getline(user, up);
 
@@ -240,6 +328,11 @@ int main(){
                 if (username==dc_b64(un, un.length()) && password==dc_b64(up, up.length()))
                 {
                     cout<<"Successfully Logged in..!";
+                    LoggedInUser = username;
+                    if(LoggedInUser == ADMIN_USERNAME) {
+                        adminFunctions();
+                    }
+
                 }
                 else
                 {
