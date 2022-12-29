@@ -26,10 +26,7 @@ bool ChCrDir() {
     // Directory exists
     if (st.st_mode & S_IFDIR) {
         //most likely to be a folder
-        
-    } else {
-    //most likely to be a file
-    
+        return true;
     }
   } else {
     // Directory does not exist
