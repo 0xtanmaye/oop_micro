@@ -54,7 +54,7 @@ int main(){
         if (!locate)
         {
             cout<<"You are not an member, register first!";
-            exit(1);
+            main();
         }
         else
         {
@@ -72,7 +72,7 @@ int main(){
             else
             {
                 cout<<"password is wrong for username";
-                exit(1);
+                main();
             }
             
         }
