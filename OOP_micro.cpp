@@ -1,10 +1,50 @@
 #include <iostream>
 #include <string>
 #include <fstream>
+#include <sys/stat.h>
+#include <tchar.h>
+#include <Windows.h>
 #define SIZE 1000
 
 
 using namespace std;
+
+void clear_screen()
+{
+    #ifdef lx
+	system("clear");
+    #else
+	system("cls");
+    #endif
+}
+
+bool ChCrDir() {
+  string dirname = "database";
+  struct stat st;
+
+  if (stat(dirname.c_str(), &st) == 0) {
+    // Directory exists
+    if (st.st_mode & S_IFDIR) {
+        //most likely to be a folder
+        
+    } else {
+    //most likely to be a file
+    
+    }
+  } else {
+    // Directory does not exist
+
+    #ifdef lx
+        // string dirname = "database";
+        system("mkdir database");
+        return true;
+    #else
+        system("md database");
+        return true;
+    #endif
+    }
+
+}
 
 char* enc_b64(string input_str, int len_str)
 {
@@ -129,86 +169,96 @@ char* dc_b64(string encoded, int len_str)
 
 
 int main(){
+    if(ChCrDir()){
     
-    int choice;
-    cout<<"menu:\n1.Register\n2.Login"<<endl;
-    cin>>choice;
+        int choice;
+        cout<<"menu:\n1.Register\n2.Login"<<endl;
+        cin>>choice;
 
-    string username, password, un, up;
-    
-    if (choice==1){
-        cout<<"Enter Username To Register with: ";
-        cin>>username;
+        string username, password, un, up;
+        
+        if (choice==1){
+            clear_screen();
+            cout<<"Enter Username To Register with: ";
+            cin>>username;
 
-        ifstream acc;
-        acc.open("database\\"+username+".txt");
-        if (acc)
-        {
-            cout<<"Member Already Exist!";
-            main();
-        }
-        else
-        {
-            cout<<"Create a Password: ";
-            cin>>password;
-
-            ofstream creds;
-            creds.open("database\\"+username+".txt");
-            if (!creds)
+            ifstream acc;
+            acc.open("database\\"+username+".txt");
+            if (acc)
             {
-                cout<<"Error Creating Account! Please try again!"<<endl;
+                cout<<"Member Already Exist!";
+                main();
             }
             else
             {
-                // int un_size = username.length()+1;
-                // char cr_arr[un_size];
-                string enc_un = enc_b64(username, username.length());
-                string enc_up = enc_b64(password, password.length());
-                creds <<  enc_un << endl << enc_up << endl;
-                cout<<"Registered Successfully!" << endl;
-                creds.close();
-                main();
+                cout<<"Create a Password: ";
+                cin>>password;
+
+                ofstream creds;
+                creds.open("database\\"+username+".txt");
+                if (!creds)
+                {
+                    cout<<"Error Creating Account! Please try again!"<<endl;
+                }
+                else
+                {
+                    // int un_size = username.length()+1;
+                    // char cr_arr[un_size];
+                    string enc_un = enc_b64(username, username.length());
+                    string enc_up = enc_b64(password, password.length());
+                    creds <<  enc_un << endl << enc_up << endl;
+                    cout<<"Registered Successfully!" << endl;
+                    creds.close();
+                    main();
+                }
             }
         }
-    }
 
-    else if (choice==2)
-    {
-        cout<<"Enter Username: ";
-        cin>>username;
-
-        ifstream locate;
-        locate.open("database\\"+username+".txt");
-        if (!locate)
+        else if (choice==2)
         {
-            cout<<"You are not an member, register first!";
-            main();
-        }
-        else
-        {
-            cout<<"Enter Password for "<<username<<" : ";
-            cin>>password;
+            clear_screen();
+            cout<<"Enter Username: ";
+            cin>>username;
 
-            ifstream user;
-            user.open("database\\"+ username + ".txt");
-            getline(user, un);
-            getline(user, up);
-
-            // int un_size = un.length()+1;
-            // int up_size = up.length()+1;
-
-            if (username==dc_b64(un, un.length()) && password==dc_b64(up, up.length()))
+            ifstream locate;
+            locate.open("database\\"+username+".txt");
+            if (!locate)
             {
-                cout<<"Successfully Logged in..!";
+                cout<<"You are not an member, register first!";
+                exit(1);
             }
             else
             {
-                cout<<"password is wrong for username";
-                main();
+                cout<<"Enter Password for "<<username<<" : ";
+                cin>>password;
+
+                ifstream user;
+                user.open("database\\"+ username + ".txt");
+                getline(user, un);
+                getline(user, up);
+
+                // int un_size = un.length()+1;
+                // int up_size = up.length()+1;
+
+                if (username==dc_b64(un, un.length()) && password==dc_b64(up, up.length()))
+                {
+                    cout<<"Successfully Logged in..!";
+                }
+                else
+                {
+                    cout<<"password is wrong for username";
+                    exit(1);
+                }
+                
             }
             
         }
-        
     }
+    else
+    {
+        cout<<"ughh... Some Totaly unexpected error occured .. man .. shit!";
+        exit(1);
+    }
+    
     return 0;
 }
